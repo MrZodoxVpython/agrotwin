@@ -6,7 +6,7 @@ const kops = [["Koperasi Tani Makmur","Indonesia",-7.25,112.75],["Koperasi Mekar
   ["Perak Agro Koperasi","Malaysia",4.6,101.08],["Davao Harvest Union","Filipina",7.19,125.46]];
 const tujuan = [["Singapura",1.29,103.85],["Kuala Lumpur",3.14,101.69],["Bangkok",13.75,100.5],["Manila",14.6,120.98]];
 await db.simulasi.deleteMany(); await db.distribusi.deleteMany(); await db.harga.deleteMany(); await db.stok.deleteMany();
-await db.produksi.deleteMany(); await db.user.deleteMany(); await db.komoditas.deleteMany(); await db.koperasi.deleteMany();
+await db.produksi.deleteMany(); await db.komoditas.deleteMany(); await db.koperasi.deleteMany();
 const K = [], C = [];
 for (const [nama,negara,lat,lng] of kops) K.push(await db.koperasi.create({ data:{nama,negara,lat,lng} }));
 for (const n of ["Mangga","Pisang","Naga"]) C.push(await db.komoditas.create({ data:{nama:n} }));
