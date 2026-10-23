@@ -31,3 +31,25 @@ Frontend: `cd frontend && npm i && npm run dev` (proxy `/api` ke localhost:4000)
 - Petani hanya melihat dan mengisi data koperasinya; simulasi, peta, dan prediksi untuk Koperasi dan Admin.
 - Model simulasi dan prediksi masih sederhana. Isi `ANALYTICS_URL` untuk menyambungkan model Python (`POST /predict` menerima `{series, steps}` dan mengembalikan `{prakiraan:[...]}`).
 - Data cuaca, harga, dan energi eksternal belum terintegrasi otomatis; saat ini dimasukkan lewat endpoint `/api/harga`.
+
+## Deployment Vercel + Neon PostgreSQL
+
+1. Di Neon, buat proyek database dan ambil dua connection string:
+   - **Pooled** (untuk runtime serverless): `postgresql://...@<host>-pooler.<region>.aws.neon.tech/<db>?sslmode=require`
+   - **Direct** (untuk migrasi, port 5432): `postgresql://...@<host>.<region>.aws.neon.tech/<db>?sslmode=require`
+   Keduanya wajib menyertakan `sslmode=require` (Neon mewajibkan TLS). Simpan di `.env` lokal, **tidak** di source code.
+2. Di Vercel (Settings → Project → Environment Variables), isi per lingkungan:
+   - `DATABASE_URL` → connection string pooled Neon. Atur tersedia untuk **Production** (dan **Preview** jika pakai Neon branch terpisah; jangan biarkan Preview tertukar dengan Production).
+   - `DIRECT_DATABASE_URL` → connection string direct Neon (hanya perlu saat build/migrasi).
+   - `JWT_SECRET` → string acak panjang (sama dengan yang digunakan agar token tetap valid).
+   - `ANALYTICS_URL` → opsional.
+3. Sebelum trafik produksi diterima, jalankan migrasi sekali secara terkontrol terhadap Neon:
+   ```
+   cd backend
+   DATABASE_URL=<DIRECT_DATABASE_URL_Neon> npx prisma migrate deploy
+   ```
+   Migrasi ini idempoten (hanya menerapkan migrasi yang belum pernah dijalankan) dan tidak memanggil `migrate reset`, sehingga data produksi tidak dihapus.
+4. Setiap `git push` ke produksi, Jalankan `npm run build` (melalui Vercel) yang menjalankan `prisma generate` lalu `prisma migrate deploy`.
+5. Untuk data awal/akun admin, jalankan `npm run seed` setelah tabel tersedia. Seed aman dijalankan ulang: tidak menimpa `passwordHash` user yang sudah ada.
+
+Akun contoh dari seed (sandi `password123`): `admin@agrotwin.id`, `koperasi@agrotwin.id`, `petani@agrotwin.id`.

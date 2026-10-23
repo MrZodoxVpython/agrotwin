@@ -11,10 +11,16 @@ const K = [], C = [];
 for (const [nama,negara,lat,lng] of kops) K.push(await db.koperasi.create({ data:{nama,negara,lat,lng} }));
 for (const n of ["Mangga","Pisang","Naga"]) C.push(await db.komoditas.create({ data:{nama:n} }));
 const pw = await bcrypt.hash("password123", 10);
-await db.user.createMany({ data:[
-  {email:"admin@agrotwin.id",passwordHash:pw,nama:"Administrator",role:"ADMIN"},
-  {email:"koperasi@agrotwin.id",passwordHash:pw,nama:"Pengurus Koperasi",role:"KOPERASI",koperasiId:K[0].id},
-  {email:"petani@agrotwin.id",passwordHash:pw,nama:"Petani Contoh",role:"PETANI",koperasiId:K[0].id}] });
+const users = [
+  {email:"admin@agrotwin.id",nama:"Administrator",role:"ADMIN",koperasiId:null},
+  {email:"koperasi@agrotwin.id",nama:"Pengurus Koperasi",role:"KOPERASI",koperasiId:K[0].id},
+  {email:"petani@agrotwin.id",nama:"Petani Contoh",role:"PETANI",koperasiId:K[0].id}];
+for (const u of users) {
+  await db.user.upsert({
+    where:{ email:u.email },
+    update:{ nama:u.nama, role:u.role, koperasiId:u.koperasiId },
+    create:{ email:u.email, passwordHash:pw, nama:u.nama, role:u.role, koperasiId:u.koperasiId } });
+}
 for (let w = 11; w >= 0; w--) for (const [i,k] of K.entries()) for (const [j,c] of C.entries()) {
   const kg = (900 + i*120 + j*200) * (1 + 0.02*(11-w)) * (0.9 + 0.2*Math.abs(Math.sin(w+i+j)));
   const tanggal = new Date(Date.now() - w*7*864e5);
